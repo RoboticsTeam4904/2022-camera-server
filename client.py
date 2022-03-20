@@ -42,6 +42,26 @@ while True:
             print('got jpg image of len', len(np_jpeg))
             img_rec = cv.imdecode(np_jpeg, cv.IMREAD_GRAYSCALE)
             print('got image of shape', img_rec.shape)
+
+            # crosshairs
+            # img_rec //= 2
+            # img_rec[img_rec.shape[0]//2, :] = 255
+            # img_rec[img_rec.shape[0]//2+1, :] = 0
+            img_rec[:, img_rec.shape[1]//2] = 255
+            img_rec[:, img_rec.shape[1]//2+1] = 0
+
+            def draw_tick(img_rec, ypos, xratio):
+                left_bound = int(img_rec.shape[0] * xratio/2)
+                right_bound = int(img_rec.shape[0] * (1-xratio/2))
+                img_rec[left_bound:right_bound, int(img_rec.shape[1] * (0.5 - ypos/2))] = 255
+                img_rec[left_bound:right_bound, int(img_rec.shape[1] * (0.5 - ypos/2))+1] = 0
+                img_rec[left_bound:right_bound, int(img_rec.shape[1] * (0.5 + ypos/2))] = 255
+                img_rec[left_bound:right_bound, int(img_rec.shape[1] * (0.5 + ypos/2))+1] = 0
+                return img_rec
+
+            img_rec = draw_tick(img_rec, 0.2, 1/4)
+            img_rec = draw_tick(img_rec, 0.4, 1/3)
+
             # plt.imshow(img_rec)
             # plt.show()
 
