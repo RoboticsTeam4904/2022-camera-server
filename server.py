@@ -1,22 +1,42 @@
-import cv2 as cv
 import numpy as np
 import socket
 import asyncio
 from matplotlib import pyplot as plt
 from time import sleep
+from watchdog.observers import Observer
+from watchdog.events import FileSystemEventHandler, LoggingEventHandler
+import logging
 
 HOST = "127.0.0.1" # Needs to be constantly updated except 127.0.0.1 which is auto local host
+PATH = 'image_stream.jpg'
 PORT = 8324
-FRAMERATE = 30
 
 address = (HOST,PORT)
 ## CAST OPENCV image to byte array
 ## add some byte at the beginning/end that you can look for
 ## use opencv from byte array to image
-cap = cv.VideoCapture(0)
-if not cap.isOpened():
-    print("urbadgetgoodvidded")
-    exit()
+
+class EventHandler(FileSystemEventHandler):
+    def on_moved(event):
+        print(event)
+
+logging.basicConfig(level=logging.INFO,
+                    format='%(asctime)s - %(message)s',
+                    datefmt='%Y-%m-%d %H:%M:%S')
+
+# handler = EventHandler()
+handler = LoggingEventHandler()
+
+observer = Observer()
+observer.schedule(handler, '.')
+observer.start()
+
+try:
+    while True:
+        sleep(0.1)
+finally:
+    observer.stop()
+    observer.join()
 
 while True:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -30,17 +50,12 @@ while True:
                 while True:
                     ### Data undergoes transformations from numpy array to bytes
 
-                    ret, frame = cap.read()
-                    if not ret:
-                        print("something died i guess")
-                        break
+                    # ret, frame = cap.read()
+                    # if not ret:
+                    #     print("something died i guess")
+                    #     break
 
-                    gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
-                    ##
-                    print(len(gray))
 
-                    data = gray
-                    data_byte = cv.imencode(".jpg", data)[1]
                     # print(cv.imencode(".jpg",data))
                     # print(data_byte.shape, type(data_byte))
                     data_byte = data_byte.tobytes()
