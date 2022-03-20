@@ -16,80 +16,67 @@ address = (HOST,PORT)
 ## add some byte at the beginning/end that you can look for
 ## use opencv from byte array to image
 
+
 class EventHandler(FileSystemEventHandler):
-    def on_moved(event):
-        print(event)
+    def __init__(self, obs):
+        self.observer = obs
 
-logging.basicConfig(level=logging.INFO,
-                    format='%(asctime)s - %(message)s',
-                    datefmt='%Y-%m-%d %H:%M:%S')
+    def on_modified(self, event):
+        print("event modified", event.src_path)
+        # TODO: read image from file
 
-# handler = EventHandler()
-handler = LoggingEventHandler()
+        if not event.src_path.endswith(PATH):
+            return
+
+        with open(event.src_path, 'rb') as img:
+            data_byte = img.read()
+
+
+        # data_byte = data_byte.tobytes()
+
+        print("sending image of", len(data_byte), type(data_byte))
+        data_byte = data_byte + b'ThisIsAnEndToken'
+
+        try:
+            conn.sendall(data_byte)
+            # input('sent an image!')
+            # sleep(1/FRAMERATE)
+        except BrokenPipeError:
+            # TODO: how to hnadle broken pipe
+            self.observer.stop()
+            self.observer.join()
+            print("pipe broken ... did the client disconnect?")
+            raise NotImplementedError("don't know how to handle a broken pipe")
+
+
 
 observer = Observer()
-observer.schedule(handler, '.')
-observer.start()
+handler = EventHandler(observer)
 
-try:
+
+# logging.basicConfig(level=logging.INFO,
+#                     format='%(asctime)s - %(message)s',
+#                     datefmt='%Y-%m-%d %H:%M:%S')
+
+
+with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+    s.bind(address)
+    s.listen()
     while True:
-        sleep(0.1)
-finally:
-    observer.stop()
-    observer.join()
+        conn, addr = s.accept()
+        #### With connection
+        with conn:
+            print(f"Connected by {addr}")
+            observer.schedule(handler, '.')
+            observer.start()
 
-while True:
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.bind(address)
-        s.listen()
-        while True:
-            conn, addr = s.accept()
-            #### With connection
-            with conn:
-                print(f"Connected by {addr}")
+            try:
                 while True:
-                    ### Data undergoes transformations from numpy array to bytes
+                    sleep(0.05)
+            finally:
+                observer.stop()
+                observer.join()
 
-                    # ret, frame = cap.read()
-                    # if not ret:
-                    #     print("something died i guess")
-                    #     break
-
-
-                    # print(cv.imencode(".jpg",data))
-                    # print(data_byte.shape, type(data_byte))
-                    data_byte = data_byte.tobytes()
-
-                    print("sending image of", len(data_byte), type(data_byte))
-                    data_byte = data_byte + b'ThisIsAnEndToken'
-                    try:
-                        conn.sendall(data_byte)
-                        # input('sent an image!')
-                        sleep(1/FRAMERATE)
-                    except BrokenPipeError:
-                        print("pipe broken ... did the client disconnect?")
-                        break
-
-
-                # if not data.all():
-                #     print("hi data stopped coming")
-                #     break
-
-
-        # s.listen()
-        # conn, addr = s.accept()
-        # with conn:
-        #     print(f"Connected by {addr}")
-        #     while True:
-        #         data = conn.recv(1024)
-        #         if not data:
-        #             break
-        #         conn.sendall(data)
-    # print(f"Received {data!r}")
-
-    # cv.imshow("frame", gray)
-    # if cv.waitKey(1) == ord('q'):
-    #     break
 
 cap.release()
 cv.destroyAllWindows()
