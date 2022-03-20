@@ -8,6 +8,8 @@ HOST = "127.0.0.1"  # The server's hostname or IP address. This needs to be cons
 PORT =  8324 # The port used by the server
 address = (HOST, PORT)
 
+should_show_image = True
+
 while True:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.connect(address)
@@ -31,6 +33,10 @@ while True:
             # image = list(image)
             # print(len(image))
             # print(type(image))
+
+            should_show_image = not should_show_image
+            if not should_show_image:
+                continue
 
             np_jpeg = np.frombuffer(bytes_in, dtype='uint8')
             print('got jpg image of len', len(np_jpeg))
