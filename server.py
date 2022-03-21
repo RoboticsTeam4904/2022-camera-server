@@ -20,6 +20,7 @@ address = (HOST,PORT)
 class EventHandler(FileSystemEventHandler):
     def __init__(self, obs):
         self.observer = obs
+        self.image = b''
 
     def on_modified(self, event):
         print("event modified", event.src_path)
@@ -31,32 +32,30 @@ class EventHandler(FileSystemEventHandler):
         with open(event.src_path, 'rb') as img:
             data_byte = img.read()
 
+        self.image = data_byte
 
-        # data_byte = data_byte.tobytes()
+    def send_image(self):
+        """Raises BrokenPipeError if client has disconnected, and ValueError if there is no image to send."""
+        if len(self.image) == 0: raise ValueError("no image to send")
+
+        data_byte = self.image
 
         print("sending image of", len(data_byte), type(data_byte))
         data_byte = data_byte + b'ThisIsAnEndToken'
 
-        try:
-            conn.sendall(data_byte)
-            # input('sent an image!')
-            # sleep(1/FRAMERATE)
-        except BrokenPipeError:
-            # TODO: how to hnadle broken pipe
-            self.observer.stop()
-            self.observer.join()
-            print("pipe broken ... did the client disconnect?")
-            raise NotImplementedError("don't know how to handle a broken pipe")
+        conn.sendall(data_byte)
+        # try:
+        #     conn.sendall(data_byte)
+        #     # input('sent an image!')
+        #     # sleep(1/FRAMERATE)
+        # except BrokenPipeError:
+        #     # TODO: how to hnadle broken pipe
+        #     self.observer.stop()
+        #     self.observer.join()
+        #     print("pipe broken ... did the client disconnect?")
+        #     raise NotImplementedError("don't know how to handle a broken pipe")
 
 
-
-observer = Observer()
-handler = EventHandler(observer)
-
-
-# logging.basicConfig(level=logging.INFO,
-#                     format='%(asctime)s - %(message)s',
-#                     datefmt='%Y-%m-%d %H:%M:%S')
 
 
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -67,13 +66,21 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         #### With connection
         with conn:
             print(f"Connected by {addr}")
+            observer = Observer()
+            handler = EventHandler(observer)
             observer.schedule(handler, '.')
             observer.start()
 
             try:
                 while True:
+                    try:
+                        handler.send_image()
+                    except ValueError:
+                        print("no image to send!")
+                        continue
                     sleep(0.05)
-            finally:
+            except BrokenPipeError:
+                print("client disconnected")
                 observer.stop()
                 observer.join()
 

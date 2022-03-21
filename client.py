@@ -19,7 +19,6 @@ while True:
             bytes_in = b""
             while True:
                 data = s.recv(1024)
-                print(type(data[0]))
                 bytes_in = bytes_in+data
                 # print(type(image))
                 # print(type(image[-1]))
@@ -34,13 +33,14 @@ while True:
             # print(len(image))
             # print(type(image))
 
-            should_show_image = not should_show_image
+            # should_show_image = not should_show_image
             if not should_show_image:
                 continue
 
             np_jpeg = np.frombuffer(bytes_in, dtype='uint8')
             print('got jpg image of len', len(np_jpeg))
             img_rec = cv.imdecode(np_jpeg, cv.IMREAD_GRAYSCALE)
+            if img_rec is None: continue
             print('got image of shape', img_rec.shape)
 
             # crosshairs
@@ -77,7 +77,7 @@ while True:
                 break
 
 
-        print(data)
+        # print(data)
         # cv.imshow("frame", data)
         # if cv.waitKey(1) == ord('q'):y
         #     break
