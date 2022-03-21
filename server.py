@@ -23,14 +23,13 @@ class EventHandler(FileSystemEventHandler):
         self.image = b''
 
     def on_modified(self, event):
-        print("event modified", event.src_path)
-        # TODO: read image from file
-
         if not event.src_path.endswith(PATH):
             return
 
         with open(event.src_path, 'rb') as img:
             data_byte = img.read()
+
+        # print(data_byte.shape)
 
         self.image = data_byte
 
@@ -44,24 +43,12 @@ class EventHandler(FileSystemEventHandler):
         data_byte = data_byte + b'ThisIsAnEndToken'
 
         conn.sendall(data_byte)
-        # try:
-        #     conn.sendall(data_byte)
-        #     # input('sent an image!')
-        #     # sleep(1/FRAMERATE)
-        # except BrokenPipeError:
-        #     # TODO: how to hnadle broken pipe
-        #     self.observer.stop()
-        #     self.observer.join()
-        #     print("pipe broken ... did the client disconnect?")
-        #     raise NotImplementedError("don't know how to handle a broken pipe")
-
-
-
 
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
     s.bind(address)
     s.listen()
     while True:
+        print("waiting for client...")
         conn, addr = s.accept()
         #### With connection
         with conn:
