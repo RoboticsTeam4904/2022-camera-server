@@ -1,5 +1,5 @@
 PATH = 'image_stream.jpg'
-FRAMERATE = 6
+FRAMERATE = 4
 
 import cv2 as cv
 from time import sleep

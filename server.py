@@ -7,7 +7,7 @@ from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler, LoggingEventHandler
 import logging
 
-HOST = "127.0.0.1" # Needs to be constantly updated except 127.0.0.1 which is auto local host
+HOST = "NUS15128-11-albhuan.local" # Needs to be constantly updated except 127.0.0.1 which is auto local host
 PATH = 'image_stream.jpg'
 PORT = 8324
 
@@ -29,7 +29,8 @@ class EventHandler(FileSystemEventHandler):
         with open(event.src_path, 'rb') as img:
             data_byte = img.read()
 
-        # print(data_byte.shape)
+        if len(data_byte) < 2e5:   # TODO: filtering for incomplete writes is jank
+            return
 
         self.image = data_byte
 
@@ -67,6 +68,10 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                         continue
                     sleep(0.05)
             except BrokenPipeError:
+                print("client disconnected")
+                observer.stop()
+                observer.join()
+            except ConnectionResetError:
                 print("client disconnected")
                 observer.stop()
                 observer.join()
